@@ -2,12 +2,13 @@
 
 CC        = g++
 CXXFLAGS  = -std=c++14 -O3 -g3 -Wall
+LDFLAGS   = -pthread
 TARGET    = HashMapTest
 
 all: clean $(TARGET)
 
 $(TARGET):
-	$(CC) $(CXXFLAGS) $(TARGET).cpp -o $(TARGET)
+	$(CC) $(CXXFLAGS) $(TARGET).cpp -o $(TARGET) $(LDFLAGS)
 
 run:
 	./$(TARGET)
