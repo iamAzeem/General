@@ -1,6 +1,8 @@
 #ifndef HASHMAP_HPP_
 #define HASHMAP_HPP_
 
+#include <mutex>
+#include "logger.hpp"
 
 namespace HashMapTest {
 
@@ -34,7 +36,9 @@ public:
 
     void print( void ) const
     {
-        std::cout << "  { " << _key << ", " << _value << " }" << std::endl;
+        LOCK_STREAM();
+        LOG_INF() << "  { " << _key << ", " << _value << " }" << endl;
+        UNLOCK_STREAM();
     }
 
 private:
@@ -70,6 +74,7 @@ private:
     F               _hashFunction;
     unsigned int    _size;
     unsigned int    _length;
+    std::mutex      _mutex;
 };
 
 template < typename K, typename V, typename F >
@@ -85,15 +90,26 @@ TSHashMap<K, V, F>::TSHashMap( const unsigned int size ) : _hashTable( nullptr )
     _hashTable = new Entry<K, V>*[ _size ]();
     if ( _hashTable == nullptr )
     {
-        std::cerr << "Could not allocate memory for HashMap! Exiting..." << std::endl;
+        LOCK_STREAM();
+        LOG_ERR() << "Could not allocate memory for HashMap! Exiting..." << endl;
+        UNLOCK_STREAM();
+
         std::exit( EXIT_FAILURE );
     }
+
+    LOCK_STREAM();
+    LOG_INF() << "HashMap created! Size: " << size << endl;
+    UNLOCK_STREAM();
 }
 
 template < typename K, typename V, typename F >
 TSHashMap<K, V, F>::~TSHashMap()
 {
-    std::cout << "Deleting HashMap (" << length() << ")..." << std::endl;
+    _mutex.lock();
+
+    LOCK_STREAM();
+    LOG_INF() << "Deleting HashMap (" << length() << ")..." << endl;
+    UNLOCK_STREAM();
 
     /* Remove all the variable sized lists first */
     for ( unsigned int i = 0; i < _size; ++i )
@@ -118,6 +134,12 @@ TSHashMap<K, V, F>::~TSHashMap()
     /* Delete and reset hash table */
     delete [] _hashTable;
     _hashTable = nullptr;
+
+    LOCK_STREAM();
+    LOG_INF() << "HashMap deleted successfully!" << endl;
+    UNLOCK_STREAM();
+
+    _mutex.unlock();
 }
 
 template < typename K, typename V, typename F >
@@ -125,6 +147,8 @@ bool TSHashMap<K, V, F>::add ( const K& key, const V& value )
 {
     Entry< K, V >* newEntry = nullptr;
     Entry< K, V >* tmpEntry = nullptr;
+
+    _mutex.lock();
 
     /* Calculate hash value for new entry */
     const unsigned int hash = _hashFunction( key, _size );
@@ -146,7 +170,11 @@ bool TSHashMap<K, V, F>::add ( const K& key, const V& value )
         newEntry = new Entry< K, V >( key, value );
         if ( !newEntry )
         {
-            std::cerr << "Could not allocate memory for new node!" << std::endl;
+            LOCK_STREAM();
+            LOG_ERR() << "Could not allocate memory for new node!" << endl;
+            UNLOCK_STREAM();
+
+            _mutex.unlock();
             return false;
         }
 
@@ -169,6 +197,9 @@ bool TSHashMap<K, V, F>::add ( const K& key, const V& value )
 
     /* Increment length of hash map */
     _length++;
+
+    _mutex.unlock();
+
     return true;
 }
 
@@ -177,6 +208,8 @@ bool TSHashMap<K, V, F>::del ( const K& key )
 {
     Entry< K, V >* prevEntry = nullptr;
     Entry< K, V >* thisEntry = nullptr;
+
+    _mutex.lock();
 
     /* Calculate hash to find the entry */
     const unsigned int hash = _hashFunction( key, _size );
@@ -192,7 +225,11 @@ bool TSHashMap<K, V, F>::del ( const K& key )
     }
 
     /* If entry not found, return false */
-    if ( !thisEntry ) { return false; }
+    if ( !thisEntry )
+    {
+        _mutex.unlock();
+        return false;
+    }
 
     /* If found, remove entry from hash table */
     if ( !prevEntry )
@@ -211,30 +248,41 @@ bool TSHashMap<K, V, F>::del ( const K& key )
 
     /* Decrement length of hash map */
     _length--;
+
+    _mutex.unlock();
+
     return true;
 }
 
 template < typename K, typename V, typename F >
 bool TSHashMap<K, V, F>::find ( const K& key, V& value )
 {
+    _mutex.lock();
+
     /* Calculate hash value for the key */
     const unsigned int hash = _hashFunction( key, _size );
 
     /* Get bucket against key */
     Entry< K, V >* tmpEntry = _hashTable[ hash ];
 
+    bool isFound = false;
+
     /* Find entry in the chain, return true if found */
-    for ( ; tmpEntry ; tmpEntry = tmpEntry->getNext() )
+    while ( tmpEntry && !isFound )
     {
         if ( tmpEntry->getKey() == key )
         {
             value = tmpEntry->getValue();
-            return true;
+            isFound = true;
         }
+
+        tmpEntry = tmpEntry->getNext();
     }
 
+    _mutex.unlock();
+
     /* If entry not found, return false */
-    return false;
+    return isFound;
 }
 
 template < typename K, typename V, typename F >
@@ -260,13 +308,19 @@ void TSHashMap<K, V, F>::print( void )
 {
     Entry< K, V >* thisEntry = nullptr;
 
+    _mutex.lock();
+
     /* Print length of hash map */
-    std::cout << "HashMap Length: " << length() << std::endl;
+    LOCK_STREAM();
+    LOG_INF() << "HashMap Length: " << length() << endl;
+    UNLOCK_STREAM();
 
     /* Traverse hash table and print key-value pairs */
     for ( unsigned int i = 0; i < size(); ++i )
     {
-        std::cout << "Bucket No: " << ( i + 1 ) << std::endl;
+        LOCK_STREAM();
+        LOG_INF() << "Bucket No: " << ( i + 1 ) << endl;
+        UNLOCK_STREAM();
 
         /* Get first entry of bucket */
         thisEntry = _hashTable[ i ];
@@ -278,6 +332,8 @@ void TSHashMap<K, V, F>::print( void )
             thisEntry = thisEntry->getNext();
         }
     }
+
+    _mutex.unlock();
 }
 
 } // HashMapTest
