@@ -1,8 +1,8 @@
 #ifndef HASHMAP_HPP_
 #define HASHMAP_HPP_
 
-#include <mutex>
 #include "logger.hpp"
+#include "read_write_lock.hpp"
 
 namespace HashMapTest {
 
@@ -76,7 +76,7 @@ private:
     F               _hashFunction;
     size_t          _size;
     size_t          _length;
-    std::mutex      _mutex;
+    ReadWriteLock   _mutex;
 };
 
 template < typename K, typename V, typename F >
@@ -107,7 +107,7 @@ TSHashMap<K, V, F>::TSHashMap( const size_t size ) : _hashTable{ nullptr }, _siz
 template < typename K, typename V, typename F >
 TSHashMap<K, V, F>::~TSHashMap()
 {
-    _mutex.lock();
+    _mutex.writeLock();
 
     LOCK_STREAM();
     LOG_INF() << "Deleting HashMap (" << length() << ")..." << endl;
@@ -141,7 +141,7 @@ TSHashMap<K, V, F>::~TSHashMap()
     LOG_INF() << "HashMap deleted successfully!" << endl;
     UNLOCK_STREAM();
 
-    _mutex.unlock();
+    _mutex.rwUnlock();
 }
 
 template < typename K, typename V, typename F >
@@ -150,7 +150,7 @@ bool TSHashMap<K, V, F>::add ( const K& key, const V& value )
     Entry< K, V >* newEntry = nullptr;
     Entry< K, V >* tmpEntry = nullptr;
 
-    _mutex.lock();
+    _mutex.writeLock();
 
     /* Calculate hash value for new entry */
     const HashType hash = _hashFunction( key, _size );
@@ -176,7 +176,7 @@ bool TSHashMap<K, V, F>::add ( const K& key, const V& value )
             LOG_ERR() << "Could not allocate memory for new node!" << endl;
             UNLOCK_STREAM();
 
-            _mutex.unlock();
+            _mutex.rwUnlock();
             return false;
         }
 
@@ -200,7 +200,7 @@ bool TSHashMap<K, V, F>::add ( const K& key, const V& value )
     /* Increment length of hash map */
     _length++;
 
-    _mutex.unlock();
+    _mutex.rwUnlock();
 
     return true;
 }
@@ -211,7 +211,7 @@ bool TSHashMap<K, V, F>::del ( const K& key )
     Entry< K, V >* prevEntry = nullptr;
     Entry< K, V >* thisEntry = nullptr;
 
-    _mutex.lock();
+    _mutex.writeLock();
 
     /* Calculate hash to find the entry */
     const HashType hash = _hashFunction( key, _size );
@@ -229,7 +229,7 @@ bool TSHashMap<K, V, F>::del ( const K& key )
     /* If entry not found, return false */
     if ( !thisEntry )
     {
-        _mutex.unlock();
+        _mutex.rwUnlock();
         return false;
     }
 
@@ -251,7 +251,7 @@ bool TSHashMap<K, V, F>::del ( const K& key )
     /* Decrement length of hash map */
     _length--;
 
-    _mutex.unlock();
+    _mutex.rwUnlock();
 
     return true;
 }
@@ -259,7 +259,7 @@ bool TSHashMap<K, V, F>::del ( const K& key )
 template < typename K, typename V, typename F >
 bool TSHashMap<K, V, F>::find ( const K& key, V& value )
 {
-    _mutex.lock();
+    _mutex.readLock();
 
     /* Calculate hash value for the key */
     const HashType hash = _hashFunction( key, _size );
@@ -281,7 +281,7 @@ bool TSHashMap<K, V, F>::find ( const K& key, V& value )
         tmpEntry = tmpEntry->getNext();
     }
 
-    _mutex.unlock();
+    _mutex.rwUnlock();
 
     /* If entry not found, return false */
     return isFound;
@@ -310,7 +310,7 @@ void TSHashMap<K, V, F>::print( void )
 {
     Entry< K, V >* thisEntry = nullptr;
 
-    _mutex.lock();
+    _mutex.readLock();
 
     /* Print length of hash map */
     LOCK_STREAM();
@@ -335,7 +335,7 @@ void TSHashMap<K, V, F>::print( void )
         }
     }
 
-    _mutex.unlock();
+    _mutex.rwUnlock();
 }
 
 } // HashMapTest

@@ -3,12 +3,13 @@
 CC        = g++
 CXXFLAGS  = -std=c++14 -O3 -g3 -Wall
 LDFLAGS   = -pthread
+SOURCES   = read_write_lock.cpp HashMapTest.cpp
 TARGET    = HashMapTest
 
 all: clean $(TARGET)
 
 $(TARGET):
-	$(CC) $(CXXFLAGS) $(TARGET).cpp -o $(TARGET) $(LDFLAGS)
+	$(CC) $(CXXFLAGS) $(SOURCES) -o $(TARGET) $(LDFLAGS)
 
 run:
 	./$(TARGET)
