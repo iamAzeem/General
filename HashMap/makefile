@@ -18,5 +18,5 @@ run-v:
 clean:
 	$(RM) $(TARGET)
 
-.PHONY: all clean
+.PHONY: all clean run run-v
 
