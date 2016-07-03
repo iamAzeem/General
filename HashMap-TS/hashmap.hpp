@@ -4,6 +4,7 @@
 #include "logger.hpp"
 #include "read_write_lock.hpp"
 
+
 namespace HashMapTest {
 
 const unsigned int DEFAULT_SIZE = 10;

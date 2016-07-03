@@ -1,5 +1,6 @@
 #include "read_write_lock.hpp"
 
+
 namespace HashMapTest {
 
 using std::unique_lock;

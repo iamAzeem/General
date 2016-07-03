@@ -25,8 +25,8 @@ void hashmapTester ( void );
 enum TestDefaults
 {
     ENTRIES_AT_STARTUP      = 100,
-    NUM_OF_WRITER_THREADS   = 1,
-    NUM_OF_READER_THREADS   = 10,
+    NUM_OF_WRITER_THREADS   = 15,
+    NUM_OF_READER_THREADS   = 20,
     NUM_OF_WRITER_INTERVALS = 100,
     NUM_OF_READER_INTERVALS = 200,
     WRITER_STARTUP_DELAY_MS = 100,
