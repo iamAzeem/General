@@ -1,17 +1,19 @@
 # Makefile for HashMap Test
 
 CC        = g++
-CXXFLAGS  = -std=c++14 -O3 -Wall -Werror
-SOURCES   = hashmap.cpp HashMapTest.cpp
+CXXFLAGS  = -std=c++14 -O3 -g3 -Wall -Werror
 TARGET    = HashMapTest
 
-all: $(TARGET)
+all: clean $(TARGET)
 
 $(TARGET):
-	$(CC) $(CXXFLAGS) $(SOURCES) -o $(TARGET)
+	$(CC) $(CXXFLAGS) $(TARGET).cpp -o $(TARGET)
 
 run:
 	./$(TARGET)
+
+run-v:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(TARGET)
 
 clean:
 	$(RM) $(TARGET)
