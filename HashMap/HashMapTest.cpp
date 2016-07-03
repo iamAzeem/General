@@ -2,16 +2,12 @@
 #include <cstdlib>
 #include <thread>
 #include <chrono>
-#include <mutex>
 #include "logger.hpp"
 #include "hashmap.hpp"
 
 
 namespace HashMapTest {
 
-using std::cout;
-using std::cerr;
-using std::endl;
 using std::thread;
 using std::this_thread::get_id;
 using std::this_thread::sleep_for;
@@ -177,5 +173,5 @@ void hashmapTester( void )
 int main( void )
 {
     HashMapTest::hashmapTester();
-    return 0;
+    return EXIT_SUCCESS;
 }
