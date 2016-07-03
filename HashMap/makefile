@@ -1,7 +1,7 @@
 # Makefile for HashMap Test
 
 CC        = g++
-CXXFLAGS  = -std=c++11 -O3 -Wall
+CXXFLAGS  = -std=c++14 -O3 -Wall -Werror
 SOURCES   = hashmap.cpp HashMapTest.cpp
 TARGET    = HashMapTest
 

@@ -29,8 +29,6 @@ private:
     Entry<K, V>**   _hashTable;
     F               _hashFunction;
     unsigned int    _size;
-
-
 };
 
 } // HashMapTest
