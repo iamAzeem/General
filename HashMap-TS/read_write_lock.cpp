@@ -5,46 +5,50 @@ namespace HashMapTest {
 
 using std::unique_lock;
 
-ReadWriteLock::ReadWriteLock() : _readers{ 0 }, _writers{ 0 }, _active{ 0 }
+ReadWriteLock::ReadWriteLock() : _nReaders{ 0 }, _nWriters{ 0 }, _active{ 0 }
 {
 }
 
 void ReadWriteLock::readLock ( void )
 {
-    unique_lock< mutex > lock( _mutex );
-    ++_readers;
-    while( _active < 0 || _writers > 0 )
-        _rCondVar.wait( lock );
-    --_readers;
-    ++_active;
+    unique_lock< mutex > lock( _mutex );        // Acquire lock for condition variable
+    ++_nReaders;                                // Increment number of readers
+    while ( _active < 0 || _nWriters > 0 )      // LOOP: To avoid spurious wake-ups
+    {
+        _rCondVar.wait( lock );                 // Wait for the notification to read
+    }
+    --_nReaders;                                // Decrement number of readers
+    ++_active;                                  // Increment active status; block writers
 }
 
 void ReadWriteLock::writeLock( void )
 {
-    unique_lock< mutex > lock( _mutex );
-    ++_writers;
-    while( _active != 0 )
-        _wCondVar.wait(lock);
-    --_writers;
-    _active = -1;
+    unique_lock< mutex > lock( _mutex );        // Acquire lock for condition variable
+    ++_nWriters;                                // Increment number of writers
+    while ( _active != 0 )                      // LOOP: To avoid spurious wake-ups,
+    {                                           //       while there's reader(s) reading
+        _wCondVar.wait( lock );                 // Wait for the notification to write
+    }
+    --_nWriters;                                // Decrement number of writers
+    _active = -1;                               // Reset active status; block readers
 }
 
 void ReadWriteLock::rwUnlock ( void )
 {
-    unique_lock< mutex > lock( _mutex );
-    if( _active > 0 )
+    unique_lock< mutex > lock( _mutex );        // Acquire lock for condition variable
+    if ( _active > 0 )                          // IF: Readers are active?
     {
-        --_active;
-        if( _active == 0 )
-            _wCondVar.notify_one();
+        --_active;                              // Decrement a reader active status
+        if ( _active == 0 )                     // IF: There's no reader?
+            _wCondVar.notify_one();             //     Notify a writer to write
     }
-    else
+    else                                        // ELSE: readers are not active
     {
-        _active = 0;
-        if( _writers > 0 )
-            _wCondVar.notify_one();
-        else if( _readers > 0 )
-            _rCondVar.notify_all();
+        _active = 0;                            // Reset active status
+        if ( _nWriters > 0 )                    // IF: There are writers?
+            _wCondVar.notify_one();             //     Notify a writer to write
+        else if ( _nReaders > 0 )               // IF: There are readers?
+            _rCondVar.notify_all();             //     Notify all readers to read
     }
 }
 

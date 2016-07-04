@@ -20,12 +20,12 @@ public:
     void rwUnlock ( void );
 
 private:
-    mutex                   _mutex;
-    condition_variable      _rCondVar;
-    condition_variable      _wCondVar;
-    size_t                  _readers;
-    size_t                  _writers;
-    int                     _active;
+    mutex                   _mutex;         // common mutex for unique_lock
+    condition_variable      _rCondVar;      // condition variable for readers
+    condition_variable      _wCondVar;      // condition variable for writers
+    size_t                  _nReaders;      // count for readers
+    size_t                  _nWriters;      // count for writers
+    int                     _active;        // flag to avoid spurious wake-ups
 };
 
 } // HashMapTest
