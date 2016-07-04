@@ -1,10 +1,10 @@
 # Makefile for Recursion Test
 
 CC        = g++
-CXXFLAGS  = -std=c++11 -O3 -Wall
+CXXFLAGS  = -std=c++11 -O3
 TARGET    = RecursionTest
 
-all: $(TARGET)
+all: clean $(TARGET)
 
 $(TARGET):
 	$(CC) $(CXXFLAGS) $(TARGET).cpp -o $(TARGET)
