@@ -50,9 +50,6 @@ private:
     Entry*  _next;
 };
 
-template < typename K, typename V >
-class Entry;
-
 template < typename K, typename V, typename F = DefaultHashFunction< K > >
 class TSHashMap
 {
