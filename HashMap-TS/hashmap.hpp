@@ -7,7 +7,7 @@
 
 namespace HashMapTest {
 
-const unsigned int DEFAULT_SIZE = 10;
+const unsigned int DEFAULT_HASHMAP_SIZE = 10;
 
 typedef unsigned int HashType;
 
@@ -83,7 +83,7 @@ TSHashMap<K, V, F>::TSHashMap( const size_t size ) : _hashTable{ nullptr }, _siz
     /* Validate positive size; use default size otherwise */
     if ( size <= 0 )
     {
-        _size = DEFAULT_SIZE;
+        _size = DEFAULT_HASHMAP_SIZE;
     }
 
     /* Initialize hash table / buckets */
@@ -105,11 +105,11 @@ TSHashMap<K, V, F>::TSHashMap( const size_t size ) : _hashTable{ nullptr }, _siz
 template < typename K, typename V, typename F >
 TSHashMap<K, V, F>::~TSHashMap()
 {
-    _mutex.writeLock();
-
     LOCK_STREAM();
     LOG_INF() << "Deleting HashMap (" << length() << ")..." << endl;
     UNLOCK_STREAM();
+
+    _mutex.writeLock();
 
     /* Remove all the variable sized lists first */
     for ( size_t i = 0; i < _size; ++i )
@@ -135,11 +135,11 @@ TSHashMap<K, V, F>::~TSHashMap()
     delete [] _hashTable;
     _hashTable = nullptr;
 
+    _mutex.rwUnlock();
+
     LOCK_STREAM();
     LOG_INF() << "HashMap deleted successfully!" << endl;
     UNLOCK_STREAM();
-
-    _mutex.rwUnlock();
 }
 
 template < typename K, typename V, typename F >
@@ -300,6 +300,80 @@ const size_t TSHashMap<K, V, F>::length( void ) const
 template < typename K, typename V, typename F >
 bool TSHashMap<K, V, F>::resize( const size_t size )
 {
+    _mutex.writeLock();
+
+    /* Validate new size; should be greater than old size */
+    if ( size <= _size )
+    {
+        LOCK_STREAM();
+        LOG_ERR() << "Cannot resize! New size should be greater than old size!" << endl;
+        UNLOCK_STREAM();
+
+        _mutex.rwUnlock();
+
+        return false;
+    }
+
+    /* Get pointer to old table */
+    auto oldHashTable = _hashTable;
+
+    /* Resent HashMap original table */
+    _hashTable = nullptr;
+
+    /* Allocate memory for new HashMap table */
+    _hashTable = new Entry<K, V>*[ size ]{};
+    if ( _hashTable == nullptr )
+    {
+        LOCK_STREAM();
+        LOG_ERR() << "Could not allocate memory for resizing! Returning..." << endl;
+        UNLOCK_STREAM();
+
+        _mutex.rwUnlock();
+
+        return false;
+    }
+
+    /* Reset new HashMap table */
+    for ( size_t i = 0; i < size; ++i ) _hashTable[ i ]  = nullptr;
+
+    /* Get old size */
+    const size_t oldSize = _size;
+
+    /* Reset new size and length */
+    _size   = size;
+    _length = 0;
+
+    /* Copy entries from old to new HashMap table */
+    for ( size_t i = 0; i < oldSize; ++i )
+    {
+        /* Check if an entry exists on current index */
+        if ( oldHashTable[ i ] )
+        {
+            Entry<K, V>* thisEntry = oldHashTable[ i ];
+            Entry<K, V>* tempEntry = nullptr;
+
+            /* Copy entry chain if exists */
+            while ( thisEntry )
+            {
+                add( thisEntry->getKey(), thisEntry->getValue() );
+
+                tempEntry = thisEntry;
+                thisEntry = thisEntry->getNext();
+                delete tempEntry;
+            }
+        }
+    }
+
+    /* Delete old HashMap table */
+    delete [] oldHashTable;
+    oldHashTable = nullptr;
+
+    _mutex.rwUnlock();
+
+    LOCK_STREAM();
+    LOG_ERR() << "Resized from " << oldSize << " to " << _size << endl;
+    UNLOCK_STREAM();
+
     return true;
 }
 
