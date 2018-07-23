@@ -9,7 +9,7 @@ bool isPalindrome( const std::string& s );
 
 int main( void )
 {
-    std::vector< std::string > strings
+    const std::vector< std::string > testStrings
     {
         "radar",
         "hello",
@@ -17,7 +17,7 @@ int main( void )
         "aabaa"
     };
 
-    std::for_each( strings.begin(), strings.end(), []( const auto& s )
+    std::for_each( testStrings.begin(), testStrings.end(), []( const auto& s )
     {
         std::cout << std::quoted( s ) << " : isPalindrome? "
                   << std::boolalpha   << isPalindrome( s ) << '\n';
@@ -28,8 +28,9 @@ int main( void )
 
 bool isPalindrome( const std::string& s )
 {
+    const auto mid = s.length() / 2;
     return std::equal( s.begin(),
-                       std::next( s.begin(), s.length() / 2 ),
+                       std::next( s.begin(), mid ),
                        s.rbegin(),
-                       std::next( s.rbegin(), s.length() / 2 ) );
+                       std::next( s.rbegin(), mid ) );
 }
